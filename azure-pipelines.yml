@@ -5,12 +5,20 @@ parameters:
   - name: serviceConnection
     displayName: Azure Service Connection
     type: string
-    default: 'your-service-connection-name'
+    default: 'azure-preparations'
+
+  - name: targetStack
+    displayName: Target Stack
+    type: string
+    default: 'rg'
+    values:
+      - rg
+      - aks
 
   - name: resourceGroupName
     displayName: Resource Group Name
     type: string
-    default: 'your-resource-group-name'
+    default: 'rg-demo-dev'
 
   - name: location
     displayName: Azure Region
@@ -31,32 +39,46 @@ parameters:
     values:
       - dev
       - qa
+      - stg
       - prod
 
   - name: owner
     displayName: Owner
     type: string
-    default: 'your-name'
+    default: 'antonio'
+
+  - name: aksName
+    displayName: AKS Name
+    type: string
+    default: 'aks-demo-dev'
+
+  - name: dnsPrefix
+    displayName: AKS DNS Prefix
+    type: string
+    default: 'aksdemodev'
+
+  - name: vnetName
+    displayName: VNet Name
+    type: string
+    default: 'vnet-demo-dev'
 
 pool:
   name: Default
 
 variables:
-  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/stacks/rg'
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/stacks/${{ parameters.targetStack }}'
 
 stages:
-  - stage: Terraform_Deploy_RG
-    displayName: Deploy Resource Group with Terraform
+  - stage: Terraform_Deploy
+    displayName: Deploy Terraform Stack
     jobs:
-      - job: DeployRG
-        displayName: Terraform Apply - Resource Group
+      - job: Deploy
+        displayName: Terraform Apply
         steps:
           - checkout: self
 
           - powershell: |
               $ErrorActionPreference = "Stop"
-
-              Write-Host "Agent Machine Name: $env:COMPUTERNAME"
               Write-Host "Default Working Directory: $(System.DefaultWorkingDirectory)"
               Write-Host "Terraform Working Directory: $(terraformWorkingDirectory)"
 
@@ -64,7 +86,6 @@ stages:
                 Write-Error "Terraform working directory does not exist: $(terraformWorkingDirectory)"
               }
 
-              Write-Host "Checking installed tools..."
               terraform version
               az version
             displayName: Pre-checks
@@ -80,14 +101,10 @@ stages:
               inlineScript: |
                 $ErrorActionPreference = "Stop"
 
-                Write-Host "Setting Azure authentication variables..."
-
                 $env:ARM_CLIENT_ID = $env:servicePrincipalId
                 $env:ARM_CLIENT_SECRET = $env:servicePrincipalKey
                 $env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv).Trim()
                 $env:ARM_TENANT_ID = $env:tenantId
-
-                Write-Host "Exporting Terraform variables..."
 
                 $env:TF_VAR_subscription_id = $env:ARM_SUBSCRIPTION_ID
                 $env:TF_VAR_resource_group_name = "${{ parameters.resourceGroupName }}"
@@ -95,25 +112,16 @@ stages:
                 $env:TF_VAR_environment = "${{ parameters.environment }}"
                 $env:TF_VAR_owner = "${{ parameters.owner }}"
 
-                Write-Host "Execution context:"
-                Write-Host "  Subscription: $env:ARM_SUBSCRIPTION_ID"
-                Write-Host "  Working Directory: $(Get-Location)"
-                Write-Host "  Resource Group: $env:TF_VAR_resource_group_name"
-                Write-Host "  Location: $env:TF_VAR_location"
-                Write-Host "  Environment: $env:TF_VAR_environment"
-                Write-Host "  Owner: $env:TF_VAR_owner"
+                $env:TF_VAR_aks_name = "${{ parameters.aksName }}"
+                $env:TF_VAR_dns_prefix = "${{ parameters.dnsPrefix }}"
+                $env:TF_VAR_vnet_name = "${{ parameters.vnetName }}"
 
-                Write-Host "Initializing Terraform..."
                 terraform init
-
-                Write-Host "Validating Terraform configuration..."
                 terraform validate
-
-                Write-Host "Planning infrastructure..."
                 terraform plan -out=tfplan
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-                Write-Host "Applying infrastructure..."
                 terraform apply -auto-approve tfplan
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-                Write-Host "Terraform outputs:"
                 terraform output
