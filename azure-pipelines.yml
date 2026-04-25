@@ -5,7 +5,7 @@ parameters:
   - name: serviceConnection
     displayName: Azure Service Connection
     type: string
-    default: 'preparations-antonio'
+    default: 'your-service-connection'
 
   - name: targetStack
     displayName: Target Stack
@@ -25,7 +25,7 @@ parameters:
   - name: resourceGroupName
     displayName: Resource Group Name
     type: string
-    default: 'rg-demo-dev'
+    default: 'rg-demo'
 
   - name: location
     displayName: Azure Region
@@ -52,37 +52,37 @@ parameters:
   - name: owner
     displayName: Owner
     type: string
-    default: 'antonio'
+    default: 'owner'
 
   - name: aksName
     displayName: AKS Name
     type: string
-    default: 'aks-demo-dev'
+    default: 'aks-demo'
 
   - name: dnsPrefix
     displayName: AKS DNS Prefix
     type: string
-    default: 'aksdemodev'
+    default: 'aksdemo'
 
   - name: vnetName
     displayName: VNet Name
     type: string
-    default: 'vnet-demo-dev'
+    default: 'vnet-demo'
 
   - name: appServicePlanName
     displayName: App Service Plan Name
     type: string
-    default: 'asp-demo-dev'
+    default: 'asp-demo'
 
   - name: webAppName
     displayName: Web App Name
     type: string
-    default: 'webapp-demo-dev'
+    default: 'webapp-demo'
 
   - name: storageAccountName
     displayName: Storage Account Name
     type: string
-    default: 'stdemodev001'
+    default: 'stgenerated001'
 
   - name: storageAccountTier
     displayName: Storage Account Tier
